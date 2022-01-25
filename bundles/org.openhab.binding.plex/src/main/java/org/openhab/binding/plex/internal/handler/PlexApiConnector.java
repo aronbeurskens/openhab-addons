@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2020 Contributors to the openHAB project
+ * Copyright (c) 2010-2022 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -22,7 +22,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.StringUtils;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.http.HttpHeader;
@@ -102,7 +101,7 @@ public class PlexApiConnector {
     }
 
     public boolean hasToken() {
-        return !StringUtils.isBlank(token);
+        return !token.isBlank();
     }
 
     /**
@@ -125,8 +124,7 @@ public class PlexApiConnector {
      */
     public @Nullable MediaContainer getSessionData() {
         try {
-            String url = "http://" + host + ":" + String.valueOf(port) + "/status/sessions" + "?X-Plex-Token="
-                    + token;
+            String url = "http://" + host + ":" + String.valueOf(port) + "/status/sessions" + "?X-Plex-Token=" + token;
             MediaContainer mediaContainer = doHttpRequest("GET", url, getClientHeaders(), MediaContainer.class);
             return mediaContainer;
         } catch (Exception e) {
@@ -167,7 +165,7 @@ public class PlexApiConnector {
                 return false;
             }
         } catch (Exception e) {
-            logger.warn("An exception occurred while fetching auth token:'{}:{}'", e.getMessage(), e);
+            logger.warn("An exception occurred while fetching auth token:'{}'", e.getMessage(), e);
         }
         return false;
     }
@@ -185,7 +183,8 @@ public class PlexApiConnector {
                         if (host.equals(tmpConn.getAddress())) {
                             scheme = tmpConn.getProtocol();
                             logger.debug(
-                                    "Plex Api fetched.  Found configured PLEX server in Api request, applied. Protocol used : {}",scheme);
+                                    "Plex Api fetched.  Found configured PLEX server in Api request, applied. Protocol used : {}",
+                                    scheme);
                             return true;
                         }
                     }
@@ -193,7 +192,7 @@ public class PlexApiConnector {
             }
             return false;
         } catch (Exception e) {
-            logger.warn("An exception occurred while fetching API :'{}:{}'", e.getMessage(), e);
+            logger.warn("An exception occurred while fetching API :'{}'", e.getMessage(), e);
         }
         return false;
     }
@@ -215,11 +214,11 @@ public class PlexApiConnector {
             T obj = (T) xStream.fromXML(response);
             return obj;
         } catch (MalformedURLException e) {
-            logger.debug(e.getMessage(), e);
+            logger.debug("{}", e.getMessage(), e);
         } catch (IOException e) {
-            logger.debug(e.getMessage(), e);
+            logger.debug("{}", e.getMessage(), e);
         } catch (Exception e) {
-            logger.debug(e.getMessage(), e);
+            logger.debug("{}", e.getMessage(), e);
         }
         return null;
     }
@@ -293,9 +292,9 @@ public class PlexApiConnector {
             wsClient.start();
             wsClient.connect(PlexSocket, uri, request);
         } catch (IOException e) {
-            logger.warn("Could not connect webSocket URI {} message {}:{}", uri, e.getMessage(), e);
+            logger.warn("Could not connect webSocket URI {} message {}", uri, e.getMessage(), e);
         } catch (Exception e) {
-            logger.warn("Could not connect webSocket URI {} message {}:{}", uri, e.getMessage(), e);
+            logger.warn("Could not connect webSocket URI {} message {}", uri, e.getMessage(), e);
             return;
         }
     }

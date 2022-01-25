@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2020 Contributors to the openHAB project
+ * Copyright (c) 2010-2022 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -19,10 +19,8 @@ import com.thoughtworks.xstream.annotations.XStreamAsAttribute;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 
 /**
- * Maps the XML response from the PLEX server endpoint /status/sessions
  *
  * @author Brian Homeyer - Initial Configuration
- *
  */
 @XStreamAlias("MediaContainer")
 public class MediaContainer {
@@ -86,7 +84,7 @@ public class MediaContainer {
         public void setGrandparentTitle(String grandparentTitle) {
             this.grandparentTitle = grandparentTitle;
         }
-        
+
         public Media getMedia() {
             return this.media;
         }
