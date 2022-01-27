@@ -32,6 +32,10 @@ public class MediaContainer {
 
     @XStreamImplicit
     @XStreamAsAttribute
+    private List<Track> Track = null;
+
+    @XStreamImplicit
+    @XStreamAsAttribute
     private List<Device> Device = null;
 
     public List<Device> getDevice() {
@@ -42,12 +46,25 @@ public class MediaContainer {
         return size;
     }
 
-    public List<Video> getVideo() {
-        return Video;
+    public List<Video> getVideo() { return Video; }
+
+    public List<Track> getTrack() { return Track; }
+
+    /**
+     * Returns a list of video or track objects, depends on what is playing
+     */
+    public List<? extends MediaType> getMediaTypes() {
+        if (Video != null) {
+            return Video;
+        }
+        if (Track != null) {
+            return Track;
+        }
+
+        return null;
     }
 
-    @XStreamAlias("Video")
-    public class Video {
+    public class MediaType {
         @XStreamAsAttribute
         private String title;
         @XStreamAsAttribute
@@ -58,6 +75,10 @@ public class MediaContainer {
         private String grandparentThumb;
         @XStreamAsAttribute
         private String grandparentTitle;
+        @XStreamAsAttribute
+        private String parentThumb;
+        @XStreamAsAttribute
+        private String parentTitle;
         @XStreamAsAttribute
         private long viewOffset;
         @XStreamAsAttribute
@@ -83,6 +104,22 @@ public class MediaContainer {
 
         public void setGrandparentTitle(String grandparentTitle) {
             this.grandparentTitle = grandparentTitle;
+        }
+
+        public String getParentThumb() {
+            return this.parentThumb;
+        }
+
+        public void setParentThumb(String parentThumb) {
+            this.parentThumb = parentThumb;
+        }
+
+        public String getParentTitle() {
+            return this.parentTitle;
+        }
+
+        public void setParentTitle(String parentTitle) {
+            this.parentTitle = parentTitle;
         }
 
         public Media getMedia() {
@@ -168,6 +205,12 @@ public class MediaContainer {
             }
         }
     }
+
+    @XStreamAlias("Video")
+    public class Video extends MediaType {}
+
+    @XStreamAlias("Track")
+    public class Track extends MediaType {}
 
     public class Device {
         @XStreamAsAttribute

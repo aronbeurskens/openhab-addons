@@ -29,7 +29,7 @@ import org.openhab.binding.plex.internal.PlexBindingConstants;
 import org.openhab.binding.plex.internal.PlexStateDescriptionOptionProvider;
 import org.openhab.binding.plex.internal.config.PlexServerConfiguration;
 import org.openhab.binding.plex.internal.dto.MediaContainer;
-import org.openhab.binding.plex.internal.dto.MediaContainer.Video;
+import org.openhab.binding.plex.internal.dto.MediaContainer.MediaType;
 import org.openhab.core.library.types.StringType;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Channel;
@@ -151,7 +151,7 @@ public class PlexServerHandler extends BaseBridgeHandler implements PlexUpdateLi
         MediaContainer sessionData = plexAPIConnector.getSessionData();
         if (sessionData != null) {
             if (sessionData.getSize() > 0) {
-                for (Video tmpMeta : sessionData.getVideo()) {
+                for (MediaType tmpMeta : sessionData.getMediaTypes()) {
                     if (playerHandlers.get(tmpMeta.getPlayer().getMachineIdentifier()) == null) {
                         if (tmpMeta.getPlayer().getLocal().equals("1")) {
                             availablePlayers.add(tmpMeta.getPlayer().getMachineIdentifier());
@@ -219,7 +219,7 @@ public class PlexServerHandler extends BaseBridgeHandler implements PlexUpdateLi
         }
         if (sessionData != null) {
             if (sessionData.getSize() > 0) { // Cover condition where nothing is playing
-                for (Video tmpMeta : sessionData.getVideo()) { // Roll through Video objects looking for machineID
+                for (MediaContainer.MediaType tmpMeta : sessionData.getMediaTypes()) { // Roll through mediaType objects looking for machineID
                     if (playerHandlers.get(tmpMeta.getPlayer().getMachineIdentifier()) != null) { // if we have a player
                                                                                                   // configured, update
                                                                                                   // it
@@ -227,6 +227,9 @@ public class PlexServerHandler extends BaseBridgeHandler implements PlexUpdateLi
                         if (tmpMeta.getType().equals("episode")) {
                             tmpMeta.setThumb(plexAPIConnector.getURL(tmpMeta.getGrandparentThumb()));
                             tmpMeta.setTitle(tmpMeta.getGrandparentTitle() + " : " + tmpMeta.getTitle());
+                        } else if (tmpMeta.getType().equals("track")) {
+                            tmpMeta.setThumb(plexAPIConnector.getURL(tmpMeta.getThumb()));
+                            tmpMeta.setTitle(tmpMeta.getGrandparentTitle() + " - " + tmpMeta.getParentTitle() + " - " + tmpMeta.getTitle());
                         } else {
                             tmpMeta.setThumb(plexAPIConnector.getURL(tmpMeta.getThumb()));
                         }

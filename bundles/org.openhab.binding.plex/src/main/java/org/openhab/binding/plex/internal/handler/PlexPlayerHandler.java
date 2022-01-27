@@ -16,7 +16,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.plex.internal.PlexBindingConstants;
 import org.openhab.binding.plex.internal.config.PlexPlayerConfiguration;
-import org.openhab.binding.plex.internal.dto.MediaContainer.Video;
+import org.openhab.binding.plex.internal.dto.MediaContainer.MediaType;
 import org.openhab.binding.plex.internal.dto.PlexPlayerState;
 import org.openhab.binding.plex.internal.dto.PlexSession;
 import org.openhab.core.library.types.StringType;
@@ -116,7 +116,7 @@ public class PlexPlayerHandler extends BaseThingHandler {
      *
      * @param sessionData The Video section of the XML(which is what pertains to the player)
      */
-    public void refreshSessionData(Video sessionData) {
+    public void refreshSessionData(MediaType sessionData) {
         currentSessionData.setState(PlexPlayerState.of(sessionData.getPlayer().getState()));
         currentSessionData.setDuration(sessionData.getMedia().getDuration());
         currentSessionData.setMachineIdentifier(sessionData.getPlayer().getMachineIdentifier());
