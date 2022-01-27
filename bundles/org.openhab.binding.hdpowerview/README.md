@@ -13,10 +13,11 @@ By using a scene to control multiple shades at once, the shades will all begin m
 
 ## Supported Things
 
-| Thing | Thing Type | Description |
-|-------|------------|-------------|
-| hub   | Bridge     | The PowerView hub provides the interface between your network and the shade's radio network. It also contains channels used to interact with scenes. |
-| shade | Thing      | A motorized shade. |
+| Thing    | Thing Type | Description |
+|----------|------------|-------------|
+| hub      | Bridge     | The PowerView hub provides the interface between your network and the shade's radio network. It also contains channels used to interact with scenes. |
+| shade    | Thing      | A motorized shade. |
+| repeater | Thing      | A PowerView signal repeater. |
 
 ## Discovery
 
@@ -46,15 +47,24 @@ If in the future, you add additional shades or scenes to your system, the bindin
 | hardRefresh             | The number of minutes between hard refreshes of the PowerView hub's shade state (default 180 three hours). See [Refreshing the PowerView Hub Cache](#Refreshing-the-PowerView-Hub-Cache). |
 | hardRefreshBatteryLevel | The number of hours between hard refreshes of battery levels from the PowerView Hub (or 0 to disable, defaulting to weekly). See [Refreshing the PowerView Hub Cache](#Refreshing-the-PowerView-Hub-Cache). |
 
-### Thing Configuration for PowerView Shades
+### Thing Configuration for PowerView Shades and Accessories
 
-PowerView shades should preferably be configured via the automatic discovery process.
-It is quite difficult to configure manually as the `id` of the shade is not exposed in the PowerView app.
-However, the configuration parameters are described below:
+PowerView shades and repeaters should preferably be configured via the automatic discovery process.
+It is quite difficult to configure manually as the `id` of the shade or repeater is not exposed in the
+PowerView app. However, the configuration parameters are described below.
+
+#### Thing Configuration for PowerView Shades
 
 | Configuration Parameter | Description |
 |-------------------------|-------------|
 | id                      | The ID of the PowerView shade in the app. Must be an integer. |
+
+#### Thing Configuration for PowerView Repeaters
+
+
+| Configuration Parameter | Description |
+|-------------------------|-------------|
+| id                      | The ID of the PowerView repeater in the app. Must be an integer. |
 
 ## Channels
 
@@ -88,13 +98,20 @@ All of these channels appear in the binding, but only those which have a physica
 | batteryVoltage | Number:ElectricPotential | Battery voltage reported by the shade. |
 | signalStrength | Number                   | Signal strength (0 for no or unknown signal, 1 for weak, 2 for average, 3 for good or 4 for excellent) |
 
+### Channels for Repeaters (Thing type `repeater`)
+
+| Channel         | Item Type | Description                   |
+|-----------------|-----------|-------------------------------|
+| identify        | String    | Flash repeater to identify. Valid values are: IDENTIFY |
+| blinkingEnabled | Switch    | Blink during commands.        |
+
 ### Roller Shutter Up/Down Position vs. Open/Close State
 
 The `position` and `secondary` channels are Rollershutter types.
 For vertical shades, the binding maps the vertical position of the "rail" to the Rollershutter ▲ / ▼ commands, and its respective percent value.
 And for horizontal shades, it maps the horizontal position of the "truck" to the Rollershutter ▲ / ▼ commands, and its respective percent value.
 
-Depending on whether the shade is a top-down, bottom-up, left-right, right-left, or dual action shade, the `OPEN` and `CLOSED` position of the shades may differ from the ▲ / ▼ commands follows..
+Depending on whether the shade is a top-down, bottom-up, left-right, right-left, dual action shade, or, a shade with a secondary blackout panel, the `OPEN` and `CLOSED` position of the shades may differ from the ▲ / ▼ commands follows..
 
 | Type of Shade               | Channel           | Rollershutter Command | Motion direction | Shade State    | Percent           | Pebble Remote Button |
 |-----------------------------|-------------------|-----------------------|------------------|----------------|-------------------|----------------------|
@@ -110,6 +127,8 @@ Depending on whether the shade is a top-down, bottom-up, left-right, right-left,
 |                             |                   | ▼                     | Down             | `CLOSED`       | 100%              | ▼                    |
 | Dual action<br>(upper rail) | ***`secondary`*** | ▲                     | Up               | ***`CLOSED`*** | 0%<sup>1)</sup>   | ![](doc/right.png)   |
 |                             |                   | ▼                     | Down             | ***`OPEN`***   | 100%<sup>1)</sup> | ![](doc/left.png)    |
+| Blackout panel ('DuoLite')  | ***`secondary`*** | ▲                     | Up               | `OPEN`         | 0%                | ▲                    |
+|                             |                   | ▼                     | Down             | `CLOSED`       | 100%              | ▼                    |
 
 ***<sup>1)</sup> BUG NOTE***: In openHAB versions v3.1.x and earlier, there was a bug in the handling of the position percent value of the `secondary` shade.
 Although the RollerShutter Up/Down commands functioned properly as described in the table above, the percent state values (e.g. displayed on a slider control), did not.
@@ -141,6 +160,9 @@ So there is an interdependency between the value of `vane` and the value of `pos
 On dual action shades, the top rail cannot move below the bottom rail, nor can the bottom rail move above the top.
 So the value of `secondary` is constrained by the prior value of `position`.
 And the value of `position` is constrained by the prior value of `secondary`.
+
+On shades with a secondary blackout panel 'DuoLite', the secondary blackout panel cannot be moved unless the main shade panel is already down.
+In this case, the position of the secondary blackout panel is reported as 0%.
 
 ## Refreshing the PowerView Hub Cache
 
@@ -191,6 +213,7 @@ For single shades the refresh takes the item's channel into consideration:
 ```
 Bridge hdpowerview:hub:g24 "Luxaflex Hub" @ "Living Room" [host="192.168.1.123"] {
     Thing shade s50150 "Living Room Shade" @ "Living Room" [id="50150"]
+    Thing repeater r16384 "Bedroom Repeater" @ "Bedroom" [id="16384"]
 }
 ```
 
@@ -200,14 +223,17 @@ Shade items:
 
 ```
 Rollershutter Living_Room_Shade_Position "Living Room Shade Position [%.0f %%]" {channel="hdpowerview:shade:g24:s50150:position"}
-
 Rollershutter Living_Room_Shade_Secondary "Living Room Shade Secondary Position [%.0f %%]" {channel="hdpowerview:shade:g24:s50150:secondary"}
-
 Dimmer Living_Room_Shade_Vane "Living Room Shade Vane [%.0f %%]" {channel="hdpowerview:shade:g24:s50150:vane"}
-
 Switch Living_Room_Shade_Battery_Low_Alarm "Living Room Shade Battery Low Alarm [%s]" {channel="hdpowerview:shade:g24:s50150:lowBattery"}
-
 Switch Living_Room_Shade_Calibrate "Living Room Shade Calibrate" {channel="hdpowerview:shade:g24:s50150:calibrate", autoupdate="false"}
+```
+
+Repeater items:
+
+```
+String Bedroom_Repeater_Identify "Bedroom Repeater Identify" {channel="hdpowerview:repeater:g24:r16384:identify"}
+Switch Bedroom_Repeater_BlinkingEnabled "Bedroom Repeater Blinking Enabled [%s]" {channel="hdpowerview:repeater:g24:r16384:blinkingEnabled"}
 ```
 
 Scene items:
@@ -219,8 +245,12 @@ Switch Living_Room_Shades_Scene_Heart "Living Room Shades Scene Heart" <blinds> 
 ### `demo.sitemap` File
 
 ```
-Frame label="Living Room Shades" {
-  Switch item=Living_Room_Shades_Scene_Open
-  Slider item=Living_Room_Shade_1_Position 
+Frame label="Living Room Shades" {
+    Switch item=Living_Room_Shades_Scene_Open
+    Slider item=Living_Room_Shade_1_Position
+}
+Frame label="Bedroom" {
+    Switch item=Bedroom_Repeater_Identify mappings=[IDENTIFY="Identify"]
+    Switch item=Bedroom_Repeater_BlinkingEnabled
 }
 ```
