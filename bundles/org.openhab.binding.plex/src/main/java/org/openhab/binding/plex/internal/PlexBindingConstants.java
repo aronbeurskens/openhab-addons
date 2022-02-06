@@ -75,8 +75,9 @@ public class PlexBindingConstants {
     public static final String CHANNEL_PLAYER_THUMB = "thumb";
     public static final String CHANNEL_PLAYER_PROGRESS = "progress";
     public static final String CHANNEL_PLAYER_ENDTIME = "endtime";
+    public static final String CHANNEL_PLAYER_CONTROL = "player";
 
     public static final Set<String> SUPPORTED_CHANNEL_IDS = Stream.of(CHANNEL_SERVER_COUNT, CHANNEL_SERVER_COUNTACTIVE,
             CHANNEL_PLAYER_STATE, CHANNEL_PLAYER_TITLE, CHANNEL_PLAYER_TYPE, CHANNEL_PLAYER_POWER, CHANNEL_PLAYER_ART,
-            CHANNEL_PLAYER_PROGRESS, CHANNEL_PLAYER_ENDTIME, CHANNEL_PLAYER_THUMB).collect(Collectors.toSet());
+            CHANNEL_PLAYER_PROGRESS, CHANNEL_PLAYER_ENDTIME, CHANNEL_PLAYER_THUMB, CHANNEL_PLAYER_CONTROL).collect(Collectors.toSet());
 }

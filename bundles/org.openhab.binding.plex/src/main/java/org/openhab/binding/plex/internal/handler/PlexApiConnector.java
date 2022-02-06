@@ -41,6 +41,9 @@ import org.openhab.binding.plex.internal.dto.MediaContainer.Device.Connection;
 import org.openhab.binding.plex.internal.dto.NotificationContainer;
 import org.openhab.binding.plex.internal.dto.User;
 import org.openhab.core.io.net.http.HttpUtil;
+import org.openhab.core.library.types.NextPreviousType;
+import org.openhab.core.library.types.PlayPauseType;
+import org.openhab.core.types.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -354,6 +357,50 @@ public class PlexApiConnector {
                     socketReconnect = scheduler.schedule(PlexApiConnector.this::connect, 5, TimeUnit.SECONDS); // WEBSOCKET_RECONNECT_INTERVAL_SEC,
                 }
             }
+        }
+    }
+
+    /**
+     * Handles control commands to the plex player.
+     *
+     * Supports:
+     * - Play / Pause
+     * - Previous / Next
+     *
+     * @param command The control command
+     * @param playerID The ID of the Plex player
+     */
+    public void controlPlayer(Command command, String playerID) {
+        String commandPath = null;
+        if (command instanceof PlayPauseType) {
+            if (command.equals(PlayPauseType.PLAY)) {
+                commandPath = "/player/playback/play";
+            }
+            if (command.equals(PlayPauseType.PAUSE)) {
+                commandPath = "/player/playback/pause";
+            }
+        }
+
+        if (command instanceof NextPreviousType) {
+            if (command.equals(NextPreviousType.PREVIOUS)) {
+                commandPath = "/player/playback/skipPrevious";
+            }
+            if (command.equals(NextPreviousType.NEXT)) {
+                commandPath = "/player/playback/skipNext";
+            }
+        }
+
+        if (commandPath != null) {
+            try {
+                String url = "http://" + host + ":" + String.valueOf(port) + commandPath;
+                Properties headers = getClientHeaders();
+                headers.put("X-Plex-Target-Client-Identifier", playerID);
+                HttpUtil.executeUrl("GET", url, headers, null, null, REQUEST_TIMEOUT_MS);
+            } catch (Exception e) {
+                logger.error("An exception occurred trying to send command '{}' to the play player: {}", commandPath, e.getMessage());
+            }
+        } else {
+            logger.warn("Could not match command '{}' to an action", command);
         }
     }
 }

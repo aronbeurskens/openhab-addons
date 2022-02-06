@@ -72,6 +72,10 @@ public class PlexServerHandler extends BaseBridgeHandler implements PlexUpdateLi
         this.stateDescriptionProvider = stateDescriptionProvider;
     }
 
+    public PlexApiConnector getPlexAPIConnector() {
+        return plexAPIConnector;
+    }
+
     /**
      * Initialize the Bridge set the config paramaters for the PLEX Server and
      * start the refresh Job.

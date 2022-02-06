@@ -16,18 +16,22 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.plex.internal.PlexBindingConstants;
 import org.openhab.binding.plex.internal.config.PlexPlayerConfiguration;
+import org.openhab.binding.plex.internal.config.PlexServerConfiguration;
 import org.openhab.binding.plex.internal.dto.MediaContainer.MediaType;
 import org.openhab.binding.plex.internal.dto.PlexPlayerState;
 import org.openhab.binding.plex.internal.dto.PlexSession;
+import org.openhab.core.library.types.PlayPauseType;
 import org.openhab.core.library.types.StringType;
-import org.openhab.core.thing.Bridge;
-import org.openhab.core.thing.ChannelUID;
-import org.openhab.core.thing.Thing;
-import org.openhab.core.thing.ThingStatus;
+import org.openhab.core.thing.*;
 import org.openhab.core.thing.binding.BaseThingHandler;
 import org.openhab.core.types.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+import static org.openhab.binding.plex.internal.PlexBindingConstants.*;
 
 /**
  * The {@link PlexBindingConstants} class defines common constants, which are
@@ -45,9 +49,12 @@ public class PlexPlayerHandler extends BaseThingHandler {
 
     private final Logger logger = LoggerFactory.getLogger(PlexPlayerHandler.class);
 
+    private PlexApiConnector plexAPIConnector;
+
     public PlexPlayerHandler(Thing thing) {
         super(thing);
         currentSessionData = new PlexSession();
+        plexAPIConnector = new PlexApiConnector(scheduler);
     }
 
     /**
@@ -78,8 +85,15 @@ public class PlexPlayerHandler extends BaseThingHandler {
      */
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        // Readonly, we don't have any channels
-        // logger.warn("Handling command '{}' for {}", command, channelUID);
+        assert bridgeHandler != null;
+        PlexApiConnector plexApiConnector = bridgeHandler.getPlexAPIConnector();
+        switch (channelUID.getId()) {
+            case CHANNEL_PLAYER_CONTROL:
+                plexApiConnector.controlPlayer(command, playerID);
+                break;
+            default:
+                logger.debug("Channel {} not implemented/supported to control player {}", channelUID.getId(), this.thing.getUID());
+        }
     }
 
     /**
@@ -162,5 +176,13 @@ public class PlexPlayerHandler extends BaseThingHandler {
                 new StringType(String.valueOf(foundInSession ? currentSessionData.getProgress() : "0")));
         updateState(new ChannelUID(getThing().getUID(), PlexBindingConstants.CHANNEL_PLAYER_ENDTIME),
                 new StringType(String.valueOf(foundInSession ? currentSessionData.getEndTime() : "")));
+
+        // Make sure player control is in sync with the play state
+        if (currentSessionData.getState() == PlexPlayerState.Playing) {
+            updateState(new ChannelUID(getThing().getUID(), PlexBindingConstants.CHANNEL_PLAYER_CONTROL), PlayPauseType.PLAY);
+        }
+        if (currentSessionData.getState() == PlexPlayerState.Paused) {
+            updateState(new ChannelUID(getThing().getUID(), PlexBindingConstants.CHANNEL_PLAYER_CONTROL), PlayPauseType.PAUSE);
+        }
     }
 }
