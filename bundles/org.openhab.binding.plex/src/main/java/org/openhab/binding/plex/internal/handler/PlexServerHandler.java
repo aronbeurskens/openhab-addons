@@ -63,6 +63,7 @@ public class PlexServerHandler extends BaseBridgeHandler implements PlexUpdateLi
     private PlexApiConnector plexAPIConnector;
 
     private @Nullable ScheduledFuture<?> pollingJob;
+    private @Nullable ScheduledFuture<?> initiateJob;
 
     private volatile boolean isRunning = false;
 
@@ -97,37 +98,38 @@ public class PlexServerHandler extends BaseBridgeHandler implements PlexUpdateLi
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                         "Username, password and Token is not set, unable to connect to PLEX without. ");
                 return;
-            } else {
-                try {
-                    plexAPIConnector.getToken();
-                } catch (ConfigurationException e) {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
-                    return;
-                } catch (Exception e) {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
-                    return;
-                }
             }
         }
-        logger.debug("Fetch API with config, {}", config.toString());
-        if (!plexAPIConnector.getApi()) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-                    "Unable to fetch API, token may be wrong?");
-            return;
-        }
-        isRunning = true;
-        onUpdate(); // Start the session refresh
-        scheduler.execute(() -> { // Start the web socket
-            synchronized (this) {
-                if (isRunning) {
-                    PlexApiConnector localSockets = plexAPIConnector = new PlexApiConnector(scheduler);
-                    localSockets.setParameters(config);
-                    localSockets.registerListener(this);
-                    localSockets.connect();
-                }
-            }
-        });
+        initiateJob = scheduler.schedule(initiateCommunications, 1, TimeUnit.SECONDS);
     }
+
+    /**
+     * The initiate job, continues until it fails from configuration error or succeeds
+     * with an API.
+     */
+    private Runnable initiateCommunications = () -> {
+        while (!isRunning) {
+            try {
+                plexAPIConnector.getToken();
+            } catch (ConfigurationException e) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
+                continue;
+            } catch (Exception e) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                break;
+            }
+            logger.debug("Fetch API with config, {}", config.toString());
+            if (!plexAPIConnector.getApi()) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                        "Unable to fetch API, token may be wrong?");
+                break;
+            }
+            isRunning = true;
+        }
+        onUpdate(); // Start the session refresh
+        plexAPIConnector.registerListener(this);
+        plexAPIConnector.connect();
+    };
 
     /**
      * Not currently used, this is a read-only binding.
@@ -298,6 +300,10 @@ public class PlexServerHandler extends BaseBridgeHandler implements PlexUpdateLi
     public void dispose() {
         logger.debug("Disposing PLEX Bridge Handler.");
         isRunning = false;
+        if (initiateJob != null && !initiateJob.isCancelled()) {
+            initiateJob.cancel(true);
+            initiateJob = null;
+        }
         plexAPIConnector.dispose();
         if (pollingJob != null && !pollingJob.isCancelled()) {
             pollingJob.cancel(true);
